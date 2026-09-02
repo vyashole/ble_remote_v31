@@ -1,0 +1,14 @@
+{
+  "domain": "ble_remote_v31",
+  "name": "BLE Remote V31 Events",
+  "version": "0.1.0",
+  "dependencies": ["bluetooth"],
+  "bluetooth": [
+    {
+      "service_uuid": "000008f0-0000-1000-8000-00805f9b34fb"
+    }
+  ],
+  "codeowners": ["@vyashole"],
+  "config_flow": false,
+  "documentation": "https://github.com/vyashole/ha-custom-integration-ble"
+}

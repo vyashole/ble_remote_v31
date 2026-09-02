@@ -1,0 +1,3 @@
+DOMAIN = "ble_remote_v31"
+EVENT_BLE_REMOTE_BUTTON_PRESSED = "ble_remote_button_pressed"
+REMOTE_SERVICE_UUID = "000008f0-0000-1000-8000-00805f9b34fb"
