@@ -6,6 +6,7 @@ from typing import Any
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.components.bluetooth import BluetoothChange
 
 from .const import DOMAIN, EVENT_BLE_REMOTE_BUTTON_PRESSED, REMOTE_SERVICE_UUID
 
