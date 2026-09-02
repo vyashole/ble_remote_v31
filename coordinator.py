@@ -71,6 +71,12 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
             # Optional MAC filter:
             # if service_info.address.upper() != REMOTE_MAC.upper():
             #     return
+            
+            _LOGGER.debug(
+               "Before parse: BLE adv from %s: service_data=%s",
+               service_info.address,
+               {str(k): v.hex() for k, v in service_info.service_data.items()},
+            )
 
             # We only care about service_data for our UUID
             service_data = None
@@ -86,7 +92,11 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
             parsed = parse_remote_command(service_data)
             if not parsed:
                 return
-
+            _LOGGER.debug(
+               "Parsed: BLE adv from %s: service_data=%s",
+               service_info.address,
+               {str(k): v.hex() for k, v in service_info.service_data.items()},
+            )
             # Fire custom event
             self.hass.bus.async_fire(
                 EVENT_BLE_REMOTE_BUTTON_PRESSED,
