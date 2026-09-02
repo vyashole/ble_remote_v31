@@ -104,6 +104,7 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
             {
                 "service_uuid": REMOTE_SERVICE_UUID,
             },
+            BluetoothChange.ADVERTISEMENT,
         )
 
     async def async_stop(self) -> None:
