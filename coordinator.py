@@ -115,7 +115,7 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
         self._cancel_listen = async_register_callback(
             self.hass,
             _handle_advertisement,
-            MATCHERS,
+            MATCHERS[0],
             BluetoothChange.ADVERTISEMENT,
         )
 
