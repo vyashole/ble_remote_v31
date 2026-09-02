@@ -18,9 +18,7 @@ REMOTE_MAC = "10:9E:3A:10:25:5D"
 REMOTE_SERVICE_UUID = "000008f0-0000-1000-8000-00805f9b34fb"
 
 MATCHERS = [
-    {
-        "service_uuids": [REMOTE_SERVICE_UUID],
-    },
+    {},
 ]
 
 def parse_remote_command(service_data: bytes) -> dict[str, Any] | None:
@@ -69,6 +67,12 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
     async def async_start(self) -> None:
         def _handle_advertisement(service_info: BluetoothServiceInfoBleak, change: BluetoothChange) -> None:
             # Extra safety: filter by MAC
+            
+            _LOGGER.debug(
+                "I has a listen: BLE adv from %s: service_data=%s",
+                service_info.address
+            )
+
             if service_info.address.upper() != REMOTE_MAC.upper():
                 return
 
