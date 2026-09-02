@@ -3,35 +3,19 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak, BluetoothChange, async_register_callback
-from homeassistant.core import HomeAssistant
+from homeassistant.components import bluetooth
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN, EVENT_BLE_REMOTE_BUTTON_PRESSED
 
 _LOGGER = logging.getLogger(__name__)
 
-# Your remote's MAC (from the log you just posted)
 REMOTE_MAC = "10:9E:3A:10:25:5D"
-
-# Service UUID from the advertisement
 REMOTE_SERVICE_UUID = "000008f0-0000-1000-8000-00805f9b34fb"
 
-MATCHERS = [
-    {},
-]
-
 def parse_remote_command(service_data: bytes) -> dict[str, Any] | None:
-    """
-    Parse the service data payload for the V31 remote.
-
-    From your log, service_data is:
-      10 00 C5 85 41 A4 BB 43 1B 85 1D 90 94 06 64 6D A1 F9 66 31 86 1F FA C9
-
-    Based on earlier analysis:
-      - cmd byte at offset 0 (0x10 / 0x11)
-      - index byte at offset 9 (0x06 in your example)
-    """
     if len(service_data) < 10:
         _LOGGER.debug("parse_remote_command: payload too short (%d)", len(service_data))
         return None
@@ -65,15 +49,14 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
         self._cancel_listen = None
 
     async def async_start(self) -> None:
-        def _handle_advertisement(service_info: BluetoothServiceInfoBleak, change: BluetoothChange) -> None:
-            # Extra safety: filter by MAC
-            
-            _LOGGER.debug(
-                "I has a listen: BLE adv from %s: service_data=%s",
-                service_info.address
-            )
+        _LOGGER.info("BleRemoteV31Coordinator async_start called")
+
+        @callback
+        def _async_discovered_device(service_info: BluetoothServiceInfoBleak, change: bluetooth.BluetoothChange) -> None:
+            _LOGGER.info("BLE callback invoked for %s (change=%s)", service_info.address, change)
 
             if service_info.address.upper() != REMOTE_MAC.upper():
+                _LOGGER.debug("MAC mismatch: %s != %s", service_info.address.upper(), REMOTE_MAC.upper())
                 return
 
             _LOGGER.debug(
@@ -82,7 +65,6 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
                 {str(k): v.hex() for k, v in service_info.service_data.items()},
             )
 
-            # Find service data for our UUID
             service_data = None
             for uuid, data in service_info.service_data.items():
                 if str(uuid).lower().endswith("08f0"):
@@ -95,6 +77,7 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
 
             parsed = parse_remote_command(service_data)
             if not parsed:
+                _LOGGER.debug("parse_remote_command returned None for %s", service_data.hex())
                 return
 
             _LOGGER.info(
@@ -115,12 +98,15 @@ class BleRemoteV31Coordinator(DataUpdateCoordinator[None]):
                 },
             )
 
-        # Match advertisements that contain our service UUID
-        self._cancel_listen = async_register_callback(
+        # Official pattern from the docs: single dict matcher + scanning mode [107]
+        self._cancel_listen = bluetooth.async_register_callback(
             self.hass,
-            _handle_advertisement,
-            MATCHERS[0],
-            BluetoothChange.ADVERTISEMENT,
+            _async_discovered_device,
+            {
+                "service_uuid": REMOTE_SERVICE_UUID,
+                "connectable": False,
+            },
+            bluetooth.BluetoothScanningMode.ACTIVE,
         )
 
     async def async_stop(self) -> None:
